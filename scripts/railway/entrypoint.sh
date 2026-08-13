@@ -81,4 +81,4 @@ EOF
     fi
 fi
 
-cat /olcrtc.yaml; exit 0
+exec /usr/local/bin/olcrtc /olcrtc.yaml
