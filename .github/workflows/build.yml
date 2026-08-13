@@ -1,0 +1,98 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to build
+        type: choice
+        options:
+          - cross
+          - cli
+          - android
+          - all
+        default: cross
+
+jobs:
+  cli:
+    name: Build CLI
+    if: contains(fromJson('["cli", "all"]'), inputs.target)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
+
+      - name: Build
+        run: mage build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: olcrtc-cli
+          path: build/olcrtc
+
+  cross:
+    name: Build Cross-Platform
+    if: contains(fromJson('["cross", "all"]'), inputs.target)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
+
+      - name: Build
+        run: mage cross
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: olcrtc-cross
+          path: build/
+
+  android:
+    name: Build Android AAR
+    if: contains(fromJson('["android", "all"]'), inputs.target)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          gomobile init
+
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
+
+      - name: Build
+        run: mage mobile
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: olcrtc-android
+          path: build/olcrtc.aar
